@@ -1,0 +1,62 @@
+---
+# vars file for dns
+
+_bind_packages:
+  default:
+    - bind
+  Alpine:
+    - bind
+    - bind-tools
+  Debian:
+    - bind9
+
+bind_packages: "{{ _bind_packages[ansible_os_family] | default(_bind_packages['default'] ) }}"
+
+_bind_validate_certs:
+  default: yes
+  Debian: no
+
+bind_validate_certs: "{{ _bind_validate_certs[ansible_os_family] | default(_bind_validate_certs['default'] ) }}"
+
+_bind_datadir:
+  default: /var/named
+  Alpine: /var/bind
+  Debian: /var/lib/bind
+  Suse: /var/lib/named/var/named
+
+bind_datadir: "{{ _bind_datadir[ansible_os_family] | default(_bind_datadir['default'] ) }}"
+
+_bind_confdir:
+  default: /etc
+  Alpine: /etc/bind
+  Debian: /etc/bind
+  Suse: /var/lib/named/etc
+
+bind_confdir: "{{ _bind_confdir[ansible_os_family] | default(_bind_confdir['default'] ) }}"
+
+_bind_group:
+  default: named
+  Debian: bind
+
+bind_group: "{{ _bind_group[ansible_os_family] | default(_bind_group['default'] ) }}"
+
+_bind_owner:
+  default: named
+  Debian: bind
+  RedHat: &redhat_owner root
+  Rocky: *redhat_owner
+
+bind_owner: "{{ _bind_owner[ansible_os_family] | default(_bind_owner['default'] ) }}"
+
+_bind_service:
+  default: bind
+  Alpine: named
+  Debian-10: bind9
+  Debian: named
+  RedHat: &redhat_service named
+  Rocky: *redhat_service
+  Ubuntu-18: bind9
+  Ubuntu-16: bind9
+  Suse: named
+
+bind_service: "{{ _bind_service[ansible_distribution ~ '-' ~ ansible_distribution_major_version] | default(_bind_service[ansible_distribution] | default(_bind_service[ansible_os_family] | default(_bind_service['default'] ))) }}"

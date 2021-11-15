@@ -1,0 +1,144 @@
+---
+
+- name: test if bind_port is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_port is defined
+      - bind_port is number
+    quiet: yes
+
+- name: test if bind_caching_dns is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_caching_dns is defined
+      - bind_caching_dns is boolean
+    quiet: yes
+
+- name: test if bind_zones is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_zones is defined
+      - bind_zones is iterable
+    quiet: yes
+
+- name: test if item in bind_zones is set correctly for undefined types
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.name is string
+      - item.records is defined
+      - item.records is iterable
+    quiet: yes
+  loop: "{{ bind_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - bind_zones is defined
+    - item.type is undefined
+
+- name: test if item in bind_zones is set correctly for defined types
+  ansible.builtin.assert:
+    that:
+      - item.type is defined
+      - item.type is string
+      - item.type in [ "forward" ]
+      - item.zone_forwarders is defined
+      - item.zone_forwarders is iterable
+    quiet: yes
+  loop: "{{ bind_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - bind_zones is defined
+    - bind_zones is string
+    - item.type is defined
+    - item.type is string
+
+- name: test if bind_allow_recursion is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_allow_recursion is iterable
+    quiet: yes
+  when:
+    - bind_allow_recursion is defined
+
+- name: test if bind_options_listen_on is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_options_listen_on is iterable
+    quiet: yes
+  when:
+    - bind_options_listen_on is defined
+
+- name: test if item in bind_options_listen_on is set correctly for strings
+  ansible.builtin.assert:
+    that:
+      - item in [ "any", "none" ]
+    quiet: yes
+  loop: "{{ bind_options_listen_on }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - bind_options_listen_on is defined
+    - item is string
+
+- name: test if item in bind_options_listen_on is set correctly
+  ansible.builtin.assert:
+    that:
+      - item is number
+      - item >= 1
+      - item <= 65535
+    quiet: yes
+  loop: "{{ bind_options_listen_on }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - bind_options_listen_on is defined
+    - item is not string
+
+- name: test if bind_options_listen_on_v6 is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_options_listen_on_v6 is iterable
+    quiet: yes
+  when:
+    - bind_options_listen_on_v6 is defined
+
+- name: test if item in bind_options_listen_on_v6 is set correctly
+  ansible.builtin.assert:
+    that:
+      - item is defined
+      - item is string
+      - item in [ "any", "none" ]
+    quiet: yes
+  loop: "{{ bind_options_listen_on_v6 }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - bind_options_listen_on_v6 is defined
+
+- name: test if bind_options_allow_query is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_options_allow_query is iterable
+    quiet: yes
+  when:
+    - bind_options_allow_query is defined
+
+- name: test if bind_options_forwarders is set correctly
+  ansible.builtin.assert:
+    that:
+      - bind_options_forwarders is iterable
+    quiet: yes
+  when:
+    - bind_options_forwarders is defined
+
+- name: test if item in bind_options_forwarders is set correctly
+  ansible.builtin.assert:
+    that:
+      - item is defined
+      - item is string
+    quiet: yes
+  loop: "{{ bind_options_forwarders }}"
+  when:
+    - bind_options_forwarders is defined

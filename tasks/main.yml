@@ -1,0 +1,145 @@
+---
+# tasks file for dns
+
+- name: import assert.yml
+  ansible.builtin.import_tasks: assert.yml
+  run_once: yes
+  delegate_to: localhost
+  tags: [ bind ]
+
+- name: install dns
+  ansible.builtin.package:
+    name: "{{ bind_packages }}"
+    state: present
+  when: bind_configure == True
+
+- name: create directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  loop:
+    - path: "{{ bind_datadir }}"
+      mode: "1770"
+      owner: "{{ bind_owner }}"
+      group: "{{ bind_group }}"
+    - path: "{{ bind_confdir }}"
+      mode: "0755"
+      owner: root
+      group: root
+  loop_control:
+    label: "{{ item.path }}"
+  when: bind_configure == True
+  tags: [ bind ]
+
+- name: create group
+  ansible.builtin.group:
+    name: "{{ bind_group }}"
+    state: present
+  when: bind_configure == True
+
+- name: create user
+  ansible.builtin.user:
+    name: "{{ bind_owner }}"
+    state: present
+    system: yes
+  when: bind_configure == True
+  tags: [ bind ]
+
+- name: generate rndc key
+  ansible.builtin.command:
+    cmd: rndc-confgen -a -c "{{ bind_confdir }}/rndc.key"
+    creates: "{{ bind_confdir }}/rndc.key"
+  when: bind_configure == True
+  tags: [ bind ]
+
+- name: set permissions on rndc key file
+  ansible.builtin.file:
+    path: "{{ bind_confdir }}/rndc.key"
+    owner: "{{ bind_owner }}"
+    group: "{{ bind_group }}"
+    mode: "0640"
+  when: bind_configure == True
+  tags: [ bind ]
+
+- name: get the hints/root file
+  ansible.builtin.get_url:
+    url: https://www.internic.net/domain/named.root
+    dest: "{{ bind_datadir }}/named.root"
+    validate_certs: "{{ bind_validate_certs }}"
+    mode: "0640"
+    owner: "{{ bind_owner }}"
+    group: "{{ bind_group }}"
+  when:
+    - bind_caching_dns | bool
+    - bind_configure == true
+  notify:
+    - rndc reload
+  tags: [ bind ]
+
+- name: create zone files
+  ansible.builtin.template:
+    src: zone.j2
+    dest: "{{ bind_datadir }}/{{ item.name }}.conf"
+    mode: "0640"
+    owner: "{{ bind_owner }}"
+    group: "{{ bind_group }}"
+  loop: "{{ bind_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.type is undefined or
+      item.type == "master"
+    - bind_configure == True
+  notify:
+    - rndc reload
+  tags: [ bind ]
+
+- name: add zones to configuration
+  ansible.builtin.template:
+    src: named.conf.j2
+    dest: "{{ bind_confdir }}/named.conf"
+    validate: "{{ bind_named_checkconf_path }} -zj %s"
+    mode: 0640
+    owner: "{{ bind_owner }}"
+    group: "{{ bind_group }}"
+    backup: yes
+  notify:
+    - restart dns
+  when: bind_configure == True
+  tags: [ bind ]
+
+- name: place systemd override
+  block:
+    - name: create /etc/systemd/system/{{ bind_service }}.service.d
+      ansible.builtin.file:
+        path: /etc/systemd/system/{{ bind_service }}.service.d
+        state: directory
+        mode: "0755"
+
+    - name: place override.conf
+      ansible.builtin.copy:
+        src: override.conf
+        dest: /etc/systemd/system/{{ bind_service }}.service.d/override.conf
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: systemctl daemon-reload
+      ansible.builtin.systemd:
+        daemon_reload: yes
+      changed_when: no
+  when:
+    - bind_configure == True
+    - ansible_service_mgr == "systemd"
+  tags: [ bind ]
+
+- name: start and enable dns
+  ansible.builtin.service:
+    name: "{{ bind_service }}"
+    state: started
+    enabled: yes
+  when: bind_configure == True
+  tags: [ bind ]

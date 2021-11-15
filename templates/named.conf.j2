@@ -1,0 +1,96 @@
+{{ ansible_managed | comment }}
+options {
+  directory "{{ bind_datadir }}";
+{% if bind_pid_file is defined %}
+  pid-file "{{ bind_pid_file }}";
+{% endif %}
+  dnssec-validation {{ bind_dnssec_validation }};
+{% if bind_dnssec_validate_except is defined %}
+  validate-except {
+{% for domain in bind_dnssec_validate_except %}
+    "{{ domain }}";
+{% endfor %}
+  };
+{% endif %}
+
+  auth-nxdomain no;
+  listen-on port {{ bind_port }} {
+{% for ipv4 in bind_options_listen_on %}
+    {{ ipv4 }};
+{% endfor %}
+  };
+  listen-on-v6 port {{ bind_port }} {
+{% for ipv6 in bind_options_listen_on_v6 %}
+    {{ ipv6 }};
+{% endfor %}
+  };
+{% if bind_options_allow_query is defined %}
+  allow-query {
+{% for ip in bind_options_allow_query %}
+    {{ ip }};
+{% endfor %}
+  };
+{% endif %}
+{% if bind_allow_recursion is defined %}
+  allow-recursion {
+{% for acl in bind_allow_recursion %}
+   {{ acl }};
+{% endfor %}
+  };
+{% endif %}
+  allow-transfer {
+{% if bind_options_allow_transfer is defined %}
+{% for ip in bind_options_allow_transfer %}
+    {{ ip }};
+{% endfor %}
+{% else %}
+    none;
+{% endif %}
+  };
+{% if bind_options_forwarders is defined %}
+  forwarders {
+{% for options_forwarder in bind_options_forwarders %}
+    {{ options_forwarder }};
+{% endfor %}
+  };
+{% endif %}
+
+{% if bind_options_response_policy is defined %}
+  response-policy {
+{% for zone in bind_options_response_policy %}
+    zone "{{ zone }}";
+{% endfor %}
+  };
+{% endif %}
+
+};
+
+{% if bind_caching_dns is defined and bind_caching_dns | bool %}
+zone "." {
+  type hint;
+  file "{{ bind_datadir }}/named.root";
+};
+{% endif %}
+
+{% for zone in bind_zones %}
+zone "{{ zone.name }}" {
+  type {{ zone.type | default('master') }};
+{% if zone.type is not defined or zone.type == "master" %}
+  file "{{ bind_datadir }}/{{ zone.name }}.conf";
+{% endif %}
+{% if zone.zone_forwarders is defined %}
+  forwarders {
+{% for zone_forwarder in zone.zone_forwarders %}
+    {{ zone_forwarder }};
+{% endfor %}
+  };
+{% endif %}
+};
+{% endfor %}
+
+include "{{ bind_confdir }}/rndc.key";
+
+controls {
+  inet 127.0.0.1 port 953
+  allow { 127.0.0.1; } keys { "rndc-key"; };
+};
