@@ -29,6 +29,14 @@ bind_caching_dns: yes
 #      - 192.168.2.0/24
 #      - 192.168.20.0/24
 
+# list of bind views and zones
+#bind_views:
+#  - name: somezone.tld
+#    type: forward
+#    zone_forwarders:
+#      - 9.9.9.9
+#      - 1.1.1.1
+
 # A list of zones and properties per zone.
 bind_zones:
   - name: localhost
