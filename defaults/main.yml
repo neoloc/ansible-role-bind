@@ -4,6 +4,9 @@
 # enable bind configuration
 bind_configure: False
 
+# enable forwarding views only. This prevesnts processing of bind_zones dictionary
+bind_forwarding_views: False
+
 # location of the named-checkconf binary
 bind_named_checkconf_path: /usr/sbin/named-checkconf
 

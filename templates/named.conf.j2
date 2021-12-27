@@ -84,6 +84,7 @@ zone "." {
 };
 {% endif %}
 
+{% if bind_forwarding_views == False %}
 {% for zone in bind_zones %}
 zone "{{ zone.name }}" {
   type {{ zone.type | default('master') }};
