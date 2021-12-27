@@ -93,6 +93,7 @@
     - item.type is undefined or
       item.type == "master"
     - bind_configure == True
+    - bind_views is not defined
   notify:
     - rndc reload
   tags: [ bind ]

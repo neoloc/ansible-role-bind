@@ -100,15 +100,20 @@ zone "{{ zone.name }}" {
 {% endif %}
 };
 {% endfor %}
+{% endif %}
 
 {% if bind_views is defined %}
 {% for view in bind_views %}
-    match-clients { {{ zone.match-clients }};  };
+view {{ view.name }} {
+    match-clients { {{ view.acl }}; };
 {% for zone in view.zones %}
 	zone "{{ zone.name }}" {
 	  type {{ zone.type | default('master') }};
 {% if zone.type is not defined or zone.type == "master" %}
 	  file "{{ bind_datadir }}/{{ zone.name }}.conf";
+{% endif %}
+{% if zone.type is defined and zone.type == "forward" and zone.zone_forwarders is defined %}
+	  forward only;
 {% endif %}
 {% if zone.zone_forwarders is defined %}
 	  forwarders {
