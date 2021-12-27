@@ -22,6 +22,13 @@ bind_port: 53
 # Should the DNS server be a caching DNS server?
 bind_caching_dns: yes
 
+# A list of ACL's
+#bind_acls:
+#  - name: internal
+#    networks:
+#      - 192.168.2.0/24
+#      - 192.168.20.0/24
+
 # A list of zones and properties per zone.
 bind_zones:
   - name: localhost

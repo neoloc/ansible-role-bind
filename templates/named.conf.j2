@@ -1,4 +1,16 @@
 {{ ansible_managed | comment }}
+
+{% if bind_acls is defined %}
+{% for acl in bind_acls %}
+acl {{ acl.name }} {
+{% for network in acl.networks %}
+	{{ network }};
+{% endfor %}
+};
+
+{% endfor %}
+{% endif %}
+
 options {
   directory "{{ bind_datadir }}";
 {% if bind_pid_file is defined %}
