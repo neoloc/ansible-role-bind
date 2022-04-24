@@ -24,6 +24,9 @@ options {
 {% endfor %}
   };
 {% endif %}
+{% if bind_empty_zones is defined %}
+  empty-zones-enable {{ bind_empty_zones }};
+{% endif %}
 
   auth-nxdomain no;
   listen-on port {{ bind_port }} {
