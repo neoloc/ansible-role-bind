@@ -108,9 +108,14 @@ zone "{{ zone.name }}" {
 {% if bind_views is defined %}
 {% for view in bind_views %}
 view {{ view.name }} {
+{% if view.acl is defined %}
     match-clients { {{ view.acl }}; };
+{% endif %}
 {% for zone in view.zones %}
 	zone "{{ zone.name }}" {
+{% if zone.inview is defined %}
+	  in-view "{{ zone.inview }}";
+{% endif %}
 	  type {{ zone.type | default('master') }};
 {% if zone.type is not defined or zone.type == "master" %}
 	  file "{{ bind_datadir }}/{{ zone.name }}.conf";
